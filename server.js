@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3001;
-const DB_FILE = path.join(__dirname, 'db.json');
+const DB_FILE = process.env.TEST_DB || path.join(__dirname, 'db.json');
 
 app.use(cors());
 app.use(express.json());
@@ -39,6 +39,10 @@ app.post('/api/tree', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Backend server running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
