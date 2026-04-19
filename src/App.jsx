@@ -6,7 +6,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { useTreeInfo } from './store/TreeContext';
 
 function App() {
-  const { isPanelOpen } = useTreeInfo();
+  const { isPanelOpen, selectedNodeId } = useTreeInfo();
 
   return (
     <ErrorBoundary>
@@ -14,7 +14,7 @@ function App() {
         <Header />
         <div style={{ display: 'flex', flex: 1, position: 'relative', overflow: 'hidden' }}>
           <Canvas />
-          <ProfilePanel isOpen={isPanelOpen} />
+          <ProfilePanel key={selectedNodeId || 'none'} isOpen={isPanelOpen} />
         </div>
       </div>
     </ErrorBoundary>

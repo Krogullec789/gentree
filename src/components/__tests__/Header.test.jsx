@@ -5,8 +5,8 @@ import Header from '../Header';
 import * as TreeContextModule from '../../store/TreeContext';
 
 vi.spyOn(TreeContextModule, 'useTreeInfo').mockReturnValue({
-  nodes: [],
-  edges: [],
+  nodes: {},
+  edges: {},
   setNodes: vi.fn(),
   setEdges: vi.fn()
 });

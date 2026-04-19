@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTreeInfo } from '../store/TreeContext';
 import { User, GripHorizontal } from 'lucide-react';
+import { NODE_WIDTH } from '../constants/layout';
 
 const PersonNode = ({ node }) => {
-  const { selectedNodeId, setSelectedNodeId, setIsPanelOpen, updateNode, canvasScale } = useTreeInfo();
+  const { selectedNodeId, setSelectedNodeId, setIsPanelOpen, updateNode, canvasScale, setDragPosition, clearDragPosition } = useTreeInfo();
   const isSelected = selectedNodeId === node.id;
 
   const [isDraggingNode, setIsDraggingNode] = useState(false);
+  const [localPos, setLocalPos] = useState({ x: node.x, y: node.y });
+  const localPosRef = useRef(localPos);
+
+  const displayX = isDraggingNode ? localPos.x : node.x;
+  const displayY = isDraggingNode ? localPos.y : node.y;
 
   const formatYear = (dateStr) => {
     if (!dateStr) return '?';
@@ -37,10 +43,15 @@ const PersonNode = ({ node }) => {
     const handleMouseMove = (moveEvent) => {
       const dx = (moveEvent.clientX - startX) / scale;
       const dy = (moveEvent.clientY - startY) / scale;
-      updateNode(node.id, { x: initialX + dx, y: initialY + dy });
+      const newPos = { x: initialX + dx, y: initialY + dy };
+      setLocalPos(newPos);
+      localPosRef.current = newPos;
+      setDragPosition(node.id, newPos);
     };
 
     const handleMouseUp = () => {
+      updateNode(node.id, localPosRef.current);
+      clearDragPosition(node.id);
       setTimeout(() => setIsDraggingNode(false), 50);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -56,9 +67,9 @@ const PersonNode = ({ node }) => {
       onClick={handleClick}
       style={{
         position: 'absolute',
-        left: node.x,
-        top: node.y,
-        width: 'var(--node-width)',
+        left: displayX,
+        top: displayY,
+        width: `${NODE_WIDTH}px`,
         minHeight: '90px',
         borderRadius: '16px',
         padding: '12px',

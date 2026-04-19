@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -9,10 +10,12 @@ const TreeContext = createContext();
 export const useTreeInfo = () => useContext(TreeContext);
 
 export const TreeProvider = ({ children }) => {
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+  const [nodes, setNodes] = useState({});
+  const [edges, setEdges] = useState({});
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  // Temporary drag positions — updated every mousemove without touching global `nodes`
+  const [dragPositions, setDragPositions] = useState({});
   // Shared canvas scale so PersonNode can correct drag delta at zoom != 1
   const [canvasScale, setCanvasScale] = useState(1);
 
@@ -25,11 +28,27 @@ export const TreeProvider = ({ children }) => {
     fetch(`${API_URL}/api/tree`)
       .then(res => res.json())
       .then(data => {
-        if (data.nodes && data.nodes.length > 0) {
+        // Zapewniamy wsparcie dla danych starych (Array) i nowych (Object)
+        let loadedNodes = {};
+        let loadedEdges = {};
+
+        if (Array.isArray(data.nodes)) {
+          data.nodes.forEach(n => loadedNodes[n.id] = n);
+        } else {
+          loadedNodes = data.nodes || {};
+        }
+
+        if (Array.isArray(data.edges)) {
+          data.edges.forEach(e => loadedEdges[e.id] = e);
+        } else {
+          loadedEdges = data.edges || {};
+        }
+
+        if (Object.keys(loadedNodes).length > 0) {
           // Skip saving the very next effect run — we just loaded this data, no need to POST it back
           saveSkipCountRef.current = 1;
-          setNodes(data.nodes);
-          setEdges(data.edges || []);
+          setNodes(loadedNodes);
+          setEdges(loadedEdges);
         } else {
           // Empty DB — create a root node and let it save normally
           const rootId = uuidv4();
@@ -46,7 +65,7 @@ export const TreeProvider = ({ children }) => {
             x: window.innerWidth / 2 - 120,
             y: window.innerHeight / 2 - 50,
           };
-          setNodes([rootNode]);
+          setNodes({ [rootId]: rootNode });
           setSelectedNodeId(rootId);
           setIsPanelOpen(true);
         }
@@ -56,7 +75,7 @@ export const TreeProvider = ({ children }) => {
 
   // Debounced auto-save — 500ms after last change, batch all edits into a single request
   useEffect(() => {
-    if (nodes.length === 0) return;
+    if (Object.keys(nodes).length === 0) return;
 
     if (saveSkipCountRef.current > 0) {
       saveSkipCountRef.current -= 1;
@@ -78,19 +97,50 @@ export const TreeProvider = ({ children }) => {
     };
   }, [nodes, edges]);
 
+  const setDragPosition = (id, pos) => {
+    setDragPositions(prev => ({ ...prev, [id]: pos }));
+  };
+
+  const clearDragPosition = (id) => {
+    setDragPositions(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  };
+
   const addNode = (nodeData) => {
-    const newNode = { id: uuidv4(), ...nodeData };
-    setNodes((prev) => [...prev, newNode]);
-    return newNode.id;
+    const id = uuidv4();
+    const newNode = { id, ...nodeData };
+    setNodes((prev) => ({ ...prev, [id]: newNode }));
+    return id;
   };
 
   const updateNode = (id, updates) => {
-    setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, ...updates } : n)));
+    setNodes((prev) => {
+      if (!prev[id]) return prev;
+      return {
+        ...prev,
+        [id]: { ...prev[id], ...updates }
+      };
+    });
   };
 
   const removeNode = (id) => {
-    setNodes((prev) => prev.filter((n) => n.id !== id));
-    setEdges((prev) => prev.filter((e) => e.sourceId !== id && e.targetId !== id));
+    setNodes((prev) => {
+      const newNodes = { ...prev };
+      delete newNodes[id];
+      return newNodes;
+    });
+    setEdges((prev) => {
+      const newEdges = { ...prev };
+      for (const edgeId in newEdges) {
+        if (newEdges[edgeId].sourceId === id || newEdges[edgeId].targetId === id) {
+          delete newEdges[edgeId];
+        }
+      }
+      return newEdges;
+    });
     if (selectedNodeId === id) {
       setSelectedNodeId(null);
       setIsPanelOpen(false);
@@ -98,18 +148,23 @@ export const TreeProvider = ({ children }) => {
   };
 
   const addEdge = (sourceId, targetId, type) => {
-    const exists = edges.some(
+    const exists = Object.values(edges).some(
       (e) =>
         (e.sourceId === sourceId && e.targetId === targetId && e.type === type) ||
         (type === 'partner' && e.sourceId === targetId && e.targetId === sourceId && e.type === type)
     );
     if (!exists) {
-      setEdges((prev) => [...prev, { id: uuidv4(), sourceId, targetId, type }]);
+      const id = uuidv4();
+      setEdges((prev) => ({ ...prev, [id]: { id, sourceId, targetId, type } }));
     }
   };
 
   const removeEdge = (id) => {
-    setEdges((prev) => prev.filter((e) => e.id !== id));
+    setEdges((prev) => {
+      const newEdges = { ...prev };
+      delete newEdges[id];
+      return newEdges;
+    });
   };
 
   return (
@@ -120,9 +175,12 @@ export const TreeProvider = ({ children }) => {
         selectedNodeId,
         isPanelOpen,
         canvasScale,
+        dragPositions,
         setSelectedNodeId,
         setIsPanelOpen,
         setCanvasScale,
+        setDragPosition,
+        clearDragPosition,
         addNode,
         updateNode,
         removeNode,

@@ -7,7 +7,7 @@ const Header = () => {
 
   const handleExport = () => {
     const dataStr = JSON.stringify({ nodes, edges }, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
     const exportFileDefaultName = 'gentree-export.json';
 
     const linkElement = document.createElement('a');
@@ -27,8 +27,8 @@ const Header = () => {
           setNodes(newNodes);
           setEdges(newEdges);
         }
-      } catch (err) {
-        console.error("Invalid file format");
+      } catch (error) {
+        console.error('Błąd importu:', error);
         alert("Nieprawidłowy plik z danymi drzewa.");
       }
     };
@@ -46,17 +46,15 @@ const Header = () => {
       borderBottom: '1px solid var(--glass-border)'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{
-          background: 'var(--accent-color)',
-          padding: '8px',
-          borderRadius: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)'
-        }}>
-          <GitBranch size={24} color="white" />
-        </div>
+          <img
+            src="/logNew2.webp"
+            alt="GenTree Logo"
+            style={{
+              width: '60px',
+              height: '60px',
+              objectFit: 'contain'
+            }}
+          />
         <div>
           <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0, letterSpacing: '-0.5px' }}>
             GenTree

@@ -15,7 +15,7 @@ const { default: app } = await import('../../server.js');
 
 describe('Backend API Tests', () => {
   beforeAll(() => {
-    fs.writeFileSync(testDbPath, JSON.stringify({ nodes: [], edges: [] }, null, 2));
+    fs.writeFileSync(testDbPath, JSON.stringify({ nodes: {}, edges: {} }, null, 2));
   });
 
   afterAll(() => {
@@ -28,13 +28,13 @@ describe('Backend API Tests', () => {
     const res = await request(app).get('/api/tree');
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveProperty('nodes');
-    expect(res.body.nodes).toHaveLength(0);
+    expect(Object.keys(res.body.nodes)).toHaveLength(0);
   });
 
   it('POST /api/tree should save data', async () => {
     const mockData = {
-      nodes: [{ id: '1', type: 'PersonNode', position: { x: 0, y: 0 }, data: { firstName: 'John' } }],
-      edges: []
+      nodes: { '1': { id: '1', firstName: 'John' } },
+      edges: {}
     };
     
     const res = await request(app)
@@ -45,7 +45,7 @@ describe('Backend API Tests', () => {
     expect(res.body).toEqual({ success: true });
     
     const dbContent = JSON.parse(fs.readFileSync(testDbPath, 'utf8'));
-    expect(dbContent.nodes).toHaveLength(1);
-    expect(dbContent.nodes[0].data.firstName).toBe('John');
+    expect(Object.keys(dbContent.nodes)).toHaveLength(1);
+    expect(dbContent.nodes['1'].firstName).toBe('John');
   });
 });

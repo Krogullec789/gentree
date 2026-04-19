@@ -1,9 +1,10 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useTreeInfo } from '../store/TreeContext';
 import PersonNode from './PersonNode';
+import { NODE_WIDTH, NODE_HEIGHT } from '../constants/layout';
 
 const Canvas = () => {
-  const { nodes, edges, updateNode, setSelectedNodeId, setIsPanelOpen, setCanvasScale } = useTreeInfo();
+  const { nodes, edges, dragPositions, setSelectedNodeId, setIsPanelOpen, setCanvasScale } = useTreeInfo();
 
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isDragging, setIsDragging] = useState(false);
@@ -70,33 +71,37 @@ const Canvas = () => {
   }, [handleWheel]);
 
   const renderEdges = () => {
-    return edges.map((edge) => {
-      const sourceNode = nodes.find(n => n.id === edge.sourceId);
-      const targetNode = nodes.find(n => n.id === edge.targetId);
+    return Object.values(edges).map((edge) => {
+      const sourceNode = nodes[edge.sourceId];
+      const targetNode = nodes[edge.targetId];
 
       if (!sourceNode || !targetNode) return null;
 
-      const nodeW = 240;
-      const nodeH = 100;
+      // Use live drag position if this node is being dragged, otherwise use stored position
+      const sPos = dragPositions[edge.sourceId] || sourceNode;
+      const tPos = dragPositions[edge.targetId] || targetNode;
+
+      const nodeW = NODE_WIDTH;
+      const nodeH = NODE_HEIGHT;
 
       let startX, startY, endX, endY;
 
       if (edge.type === 'parent-child') {
-        startX = sourceNode.x + nodeW / 2;
-        startY = sourceNode.y + nodeH;
-        endX = targetNode.x + nodeW / 2;
-        endY = targetNode.y;
+        startX = sPos.x + nodeW / 2;
+        startY = sPos.y + nodeH;
+        endX = tPos.x + nodeW / 2;
+        endY = tPos.y;
       } else {
-        if (sourceNode.x < targetNode.x) {
-          startX = sourceNode.x + nodeW;
-          startY = sourceNode.y + nodeH / 2;
-          endX = targetNode.x;
-          endY = targetNode.y + nodeH / 2;
+        if (sPos.x < tPos.x) {
+          startX = sPos.x + nodeW;
+          startY = sPos.y + nodeH / 2;
+          endX = tPos.x;
+          endY = tPos.y + nodeH / 2;
         } else {
-          startX = sourceNode.x;
-          startY = sourceNode.y + nodeH / 2;
-          endX = targetNode.x + nodeW;
-          endY = targetNode.y + nodeH / 2;
+          startX = sPos.x;
+          startY = sPos.y + nodeH / 2;
+          endX = tPos.x + nodeW;
+          endY = tPos.y + nodeH / 2;
         }
       }
 
@@ -161,7 +166,7 @@ const Canvas = () => {
         </svg>
 
         {/* HTML layer for nodes */}
-        {nodes.map(node => (
+        {Object.values(nodes).map(node => (
           <PersonNode key={node.id} node={node} />
         ))}
       </div>

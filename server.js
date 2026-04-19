@@ -20,34 +20,32 @@ app.use(express.json({ limit: '2mb' }));
 
 // Initialize db.json if it doesn't exist
 if (!fs.existsSync(DB_FILE)) {
-  fs.writeFileSync(DB_FILE, JSON.stringify({ nodes: [], edges: [] }, null, 2));
+  fs.writeFileSync(DB_FILE, JSON.stringify({ nodes: {}, edges: {} }, null, 2));
 }
 
 // Basic schema validation
 const validateTreeData = (data) => {
   if (!data || typeof data !== 'object') return false;
-  if (!Array.isArray(data.nodes) || !Array.isArray(data.edges)) return false;
-  for (const node of data.nodes) {
-    if (typeof node.id !== 'string') return false;
-  }
-  for (const edge of data.edges) {
-    if (typeof edge.id !== 'string') return false;
-    if (typeof edge.sourceId !== 'string' || typeof edge.targetId !== 'string') return false;
-  }
+  // Make sure they are generic objects (which works for arrays and Map/Records)
+  if (typeof data.nodes !== 'object' || typeof data.edges !== 'object') return false;
   return true;
 };
 
-app.get('/api/tree', (req, res) => {
+app.get('/api/tree', async (req, res) => {
   try {
-    const data = fs.readFileSync(DB_FILE, 'utf8');
+    const data = await fs.promises.readFile(DB_FILE, 'utf8');
     res.json(JSON.parse(data));
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to read data' });
+    if (error.code === 'ENOENT') {
+      res.json({ nodes: {}, edges: {} });
+    } else {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to read data' });
+    }
   }
 });
 
-app.post('/api/tree', (req, res) => {
+app.post('/api/tree', async (req, res) => {
   try {
     const data = req.body;
 
@@ -57,8 +55,8 @@ app.post('/api/tree', (req, res) => {
 
     // Atomic write: write to temp file, then rename to avoid corruption on crash
     const tmpFile = DB_FILE + '.tmp';
-    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2));
-    fs.renameSync(tmpFile, DB_FILE);
+    await fs.promises.writeFile(tmpFile, JSON.stringify(data, null, 2));
+    await fs.promises.rename(tmpFile, DB_FILE);
 
     res.json({ success: true });
   } catch (error) {
@@ -66,6 +64,7 @@ app.post('/api/tree', (req, res) => {
     res.status(500).json({ error: 'Failed to save data' });
   }
 });
+
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
