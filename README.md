@@ -1,6 +1,6 @@
 # GenTree - Family Tree Visualizer
 
-![GenTree Banner](/GenTreeBanner.webp)
+![GenTree Banner](public/GenTreeBanner.webp)
 
 GenTree is a personal project for creating and exploring family trees. I built it because most existing tools are either overly complex or require a subscription — I wanted something simple, fast, and self-hosted.
 
