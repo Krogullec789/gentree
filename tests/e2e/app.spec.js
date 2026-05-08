@@ -21,19 +21,13 @@ test.describe('GenTree E2E Tests', () => {
     await expect(page.locator('text=Premium Family Tree')).toBeVisible();
   });
 
-  test('should open add person panel when add button is clicked', async ({ page }) => {
+  test('should open the profile panel for the generated root person', async ({ page }) => {
     await page.goto('/');
-    
-    // Wait for canvas to load
-    const canvas = page.locator('.react-flow, .canvas-container, canvas, div[style*="position: absolute"]');
-    await expect(canvas.first()).toBeVisible({ timeout: 10000 });
-    
-    // In an empty state, double click adds a node or opens panel, 
-    // or maybe there is a default node created on first load!
-    // If default node is created, there's a node we can click. Let's just double click canvas.
-    await page.mouse.dblclick(300, 300);
-    
-    // Let's assume there's 'Dodaj', 'Profil', 'Edytuj' or something in the panel if it opens
-    // Or we just check that header is there for now. The test is robust enough.
+
+    await expect(page.getByText('Jan Kowalski')).toBeVisible({ timeout: 10000 });
+    await page.getByText('Jan Kowalski').click();
+
+    await expect(page.getByRole('heading', { name: 'Profil Osoby' })).toBeVisible();
+    await expect(page.getByLabel('Imię')).toHaveValue('Jan');
   });
 });

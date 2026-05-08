@@ -61,6 +61,25 @@ const PersonNode = ({ node }) => {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  const handleKeyboardMove = (e) => {
+    const step = e.shiftKey ? 50 : 10;
+    const moves = {
+      ArrowUp: { x: node.x, y: node.y - step },
+      ArrowRight: { x: node.x + step, y: node.y },
+      ArrowDown: { x: node.x, y: node.y + step },
+      ArrowLeft: { x: node.x - step, y: node.y },
+    };
+
+    const nextPosition = moves[e.key];
+    if (!nextPosition) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    setLocalPos(nextPosition);
+    localPosRef.current = nextPosition;
+    updateNode(node.id, nextPosition);
+  };
+
   return (
     <div
       className={`person-node glass ${isSelected ? 'selected' : ''}`}
@@ -86,6 +105,8 @@ const PersonNode = ({ node }) => {
     >
       <div
         onMouseDown={handleDragStart}
+        onClick={e => e.stopPropagation()}
+        onKeyDown={handleKeyboardMove}
         role="button"
         aria-label="Przesuń osobę"
         tabIndex={0}

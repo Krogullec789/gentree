@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, Upload, Search, X } from 'lucide-react';
 import { useTreeInfo } from '../store/TreeContext';
+import { normalizeTreeData } from '../utils/treeData';
 
 const Header = () => {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, setIsPanelOpen, setFocusNodeId } = useTreeInfo();
 
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [importError, setImportError] = useState('');
   const searchRef = useRef(null);
 
   const personLabel = (n) => {
@@ -42,18 +44,20 @@ const Header = () => {
   const handleImport = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setImportError('');
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const { nodes: newNodes, edges: newEdges } = JSON.parse(event.target.result);
-        if (newNodes && newEdges) {
-          setNodes(newNodes);
-          setEdges(newEdges);
-        }
+        const normalizedData = normalizeTreeData(JSON.parse(event.target.result));
+        if (!normalizedData) throw new Error('Invalid tree data');
+        setNodes(normalizedData.nodes);
+        setEdges(normalizedData.edges);
+        setImportError('');
       } catch (error) {
         console.error('Błąd importu:', error);
-        alert('Nieprawidłowy plik z danymi drzewa.');
+        setImportError('Nieprawidłowy plik z danymi drzewa.');
       }
+      e.target.value = '';
     };
     reader.readAsText(file);
   };
@@ -211,10 +215,23 @@ const Header = () => {
 
       {/* Actions */}
       <div style={{ display: 'flex', gap: '16px', flexShrink: 0 }}>
+        {importError && (
+          <span
+            role="status"
+            style={{
+              alignSelf: 'center',
+              color: '#f87171',
+              fontSize: '13px',
+              maxWidth: '220px',
+            }}
+          >
+            {importError}
+          </span>
+        )}
         <label className="btn secondary" style={{ cursor: 'pointer', margin: 0 }}>
           <Upload size={18} />
           <span>Importuj JSON</span>
-          <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
+          <input aria-label="Importuj JSON" type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
         </label>
         <button className="btn" onClick={handleExport}>
           <Download size={18} />

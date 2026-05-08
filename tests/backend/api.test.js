@@ -33,7 +33,7 @@ describe('Backend API Tests', () => {
 
   it('POST /api/tree should save data', async () => {
     const mockData = {
-      nodes: { '1': { id: '1', firstName: 'John' } },
+      nodes: { '1': { id: '1', firstName: 'John', x: 0, y: 0 } },
       edges: {}
     };
     
@@ -47,5 +47,30 @@ describe('Backend API Tests', () => {
     const dbContent = JSON.parse(fs.readFileSync(testDbPath, 'utf8'));
     expect(Object.keys(dbContent.nodes)).toHaveLength(1);
     expect(dbContent.nodes['1'].firstName).toBe('John');
+  });
+
+  it('POST /api/tree should reject malformed tree data', async () => {
+    const res = await request(app)
+      .post('/api/tree')
+      .send({ nodes: null, edges: {} });
+
+    expect(res.statusCode).toEqual(400);
+    expect(res.body).toEqual({ error: 'Invalid data structure' });
+  });
+
+  it('POST /api/tree should handle concurrent saves', async () => {
+    const requests = Array.from({ length: 5 }, (_, index) => {
+      const id = `node-${index}`;
+      return request(app)
+        .post('/api/tree')
+        .send({
+          nodes: { [id]: { id, firstName: `Person ${index}`, x: index * 10, y: 0 } },
+          edges: {}
+        });
+    });
+
+    const responses = await Promise.all(requests);
+
+    expect(responses.every(res => res.statusCode === 200)).toBe(true);
   });
 });

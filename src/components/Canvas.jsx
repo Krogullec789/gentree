@@ -9,9 +9,7 @@ const Canvas = () => {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [isFocusing, setIsFocusing] = useState(false);
   const canvasRef = useRef(null);
-  const focusTimerRef = useRef(null);
 
   // Keep context scale in sync whenever local transform.scale changes
   useEffect(() => {
@@ -26,14 +24,9 @@ const Canvas = () => {
     const scale = transform.scale;
     const newX = rect.width  / 2 - (node.x + NODE_WIDTH  / 2) * scale;
     const newY = rect.height / 2 - (node.y + NODE_HEIGHT / 2) * scale;
-    setIsFocusing(true);
     setTransform(prev => ({ ...prev, x: newX, y: newY }));
-    clearTimeout(focusTimerRef.current);
-    focusTimerRef.current = setTimeout(() => setIsFocusing(false), 450);
     setFocusNodeId(null);
-    return () => clearTimeout(focusTimerRef.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusNodeId]);
+  }, [focusNodeId, nodes, setFocusNodeId, transform.scale]);
 
   const handleMouseDown = (e) => {
     if (e.target.closest('.person-node')) return;
@@ -167,7 +160,7 @@ const Canvas = () => {
         position: 'absolute',
         top: 0,
         left: 0,
-        transition: isDragging ? 'none' : isFocusing ? 'transform 0.4s cubic-bezier(0.4,0,0.2,1)' : 'transform 0.05s ease-out',
+        transition: isDragging ? 'none' : 'transform 0.12s ease-out',
       }}>
         {/* SVG layer for relationship lines */}
         <svg style={{

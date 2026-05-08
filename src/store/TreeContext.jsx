@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { normalizeTreeData } from '../utils/treeData';
 
 // Use env variable — falls back to localhost for local dev
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -8,6 +8,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const TreeContext = createContext();
 
 export const useTreeInfo = () => useContext(TreeContext);
+
+const createId = () => crypto.randomUUID();
 
 export const TreeProvider = ({ children }) => {
   const [nodes, setNodes] = useState({});
@@ -29,21 +31,9 @@ export const TreeProvider = ({ children }) => {
     fetch(`${API_URL}/api/tree`)
       .then(res => res.json())
       .then(data => {
-        // Zapewniamy wsparcie dla danych starych (Array) i nowych (Object)
-        let loadedNodes = {};
-        let loadedEdges = {};
-
-        if (Array.isArray(data.nodes)) {
-          data.nodes.forEach(n => loadedNodes[n.id] = n);
-        } else {
-          loadedNodes = data.nodes || {};
-        }
-
-        if (Array.isArray(data.edges)) {
-          data.edges.forEach(e => loadedEdges[e.id] = e);
-        } else {
-          loadedEdges = data.edges || {};
-        }
+        const normalizedData = normalizeTreeData(data);
+        const loadedNodes = normalizedData?.nodes || {};
+        const loadedEdges = normalizedData?.edges || {};
 
         if (Object.keys(loadedNodes).length > 0) {
           // Skip saving the very next effect run — we just loaded this data, no need to POST it back
@@ -52,7 +42,7 @@ export const TreeProvider = ({ children }) => {
           setEdges(loadedEdges);
         } else {
           // Empty DB — create a root node and let it save normally
-          const rootId = uuidv4();
+          const rootId = createId();
           const rootNode = {
             id: rootId,
             firstName: 'Jan',
@@ -111,7 +101,7 @@ export const TreeProvider = ({ children }) => {
   };
 
   const addNode = (nodeData) => {
-    const id = uuidv4();
+    const id = createId();
     const newNode = { id, ...nodeData };
     setNodes((prev) => ({ ...prev, [id]: newNode }));
     return id;
@@ -155,7 +145,7 @@ export const TreeProvider = ({ children }) => {
         (type === 'partner' && e.sourceId === targetId && e.targetId === sourceId && e.type === type)
     );
     if (!exists) {
-      const id = uuidv4();
+      const id = createId();
       setEdges((prev) => ({ ...prev, [id]: { id, sourceId, targetId, type } }));
     }
   };

@@ -150,18 +150,17 @@ const ProfilePanel = ({ isOpen }) => {
 
   // Pure UI state — not derived from node data
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [linkMode, setLinkMode]   = useState(null); // 'parent'|'child'|'partner'|null
-  const [linkSearch, setLinkSearch] = useState('');
-
-  const [prevNodeId, setPrevNodeId] = useState(selectedNodeId);
-  if (selectedNodeId !== prevNodeId) {
-    setPrevNodeId(selectedNodeId);
-    setLinkMode(null);
-    setLinkSearch('');
-  }
+  const [linkState, setLinkState] = useState({
+    nodeId: selectedNodeId,
+    mode: null,
+    search: '',
+  });
 
   // Read node data directly from context (single source of truth)
   const node = selectedNodeId ? nodes[selectedNodeId] : null;
+  const isCurrentLinkState = linkState.nodeId === selectedNodeId;
+  const linkMode = isCurrentLinkState ? linkState.mode : null;
+  const linkSearch = isCurrentLinkState ? linkState.search : '';
 
   if (!isOpen || !node) {
     return (
@@ -234,8 +233,7 @@ const ProfilePanel = ({ isOpen }) => {
     if (linkMode === 'parent')  addEdge(personId, node.id, 'parent-child');
     if (linkMode === 'child')   addEdge(node.id, personId, 'parent-child');
     if (linkMode === 'partner') addEdge(node.id, personId, 'partner');
-    setLinkMode(null);
-    setLinkSearch('');
+    setLinkState({ nodeId: selectedNodeId, mode: null, search: '' });
   };
 
   const { parents, children, partners } = getRelations();
@@ -252,11 +250,19 @@ const ProfilePanel = ({ isOpen }) => {
     relType,
     isLinkOpen:     linkMode === relType,
     onAddNew:       () => handleAddNew(relType),
-    onToggleLink:   () => setLinkMode(prev => prev === relType ? null : relType),
+    onToggleLink:   () => setLinkState(prev => ({
+      nodeId: selectedNodeId,
+      mode: prev.nodeId === selectedNodeId && prev.mode === relType ? null : relType,
+      search: prev.nodeId === selectedNodeId ? prev.search : '',
+    })),
     onLinkNode:     handleLinkNode,
     onRemoveRelation: removeEdge,
     linkSearch,
-    onSearchChange: setLinkSearch,
+    onSearchChange: search => setLinkState(prev => ({
+      nodeId: selectedNodeId,
+      mode: prev.nodeId === selectedNodeId ? prev.mode : null,
+      search,
+    })),
     availableNodes: availableForLink,
   });
 
