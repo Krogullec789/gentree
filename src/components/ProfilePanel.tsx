@@ -2,12 +2,25 @@ import React, { useState } from 'react';
 import { X, UserPlus, Info, Trash2, Link2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTreeInfo } from '../store/TreeContext';
 import ConfirmModal from './ConfirmModal';
+import type { PersonNode, TreeEdge } from '../types/tree';
+
+type RelationKind = 'parent' | 'child' | 'partner';
+
+interface RelationItem {
+  edge: TreeEdge;
+  person: PersonNode;
+}
+
+interface RelationChipProps {
+  label: string;
+  onDelete: () => void;
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    RelationChip — a single existing relation with a remove button
    Declared at module level to avoid re-creation on every parent render.
 ───────────────────────────────────────────────────────────────────────────── */
-const RelationChip = ({ label, onDelete }) => (
+const RelationChip = ({ label, onDelete }: RelationChipProps) => (
   <div style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)',
@@ -34,14 +47,28 @@ const RelationChip = ({ label, onDelete }) => (
    RelationGroup — collapsible section for one relation type (parent/child/partner).
    Receives all data and callbacks as props — no closure over ProfilePanel state.
 ───────────────────────────────────────────────────────────────────────────── */
-const LINK_LABELS = {
+const LINK_LABELS: Record<RelationKind, string> = {
   parent:  'Wybierz istniejącego rodzica:',
   child:   'Wybierz istniejące dziecko:',
   partner: 'Wybierz istniejącego partnera:',
 };
 
-const personLabel = (p) =>
+const personLabel = (p: PersonNode) =>
   `${p.firstName || ''} ${p.lastName || ''}`.trim() || '(brak imienia)';
+
+interface RelationGroupProps {
+  title: string;
+  items: RelationItem[];
+  relType: RelationKind;
+  isLinkOpen: boolean;
+  onAddNew: () => void;
+  onToggleLink: () => void;
+  onLinkNode: (personId: string) => void;
+  onRemoveRelation: (edgeId: string) => void;
+  linkSearch: string;
+  onSearchChange: (search: string) => void;
+  availableNodes: PersonNode[];
+}
 
 const RelationGroup = ({
   title,
@@ -55,7 +82,7 @@ const RelationGroup = ({
   linkSearch,
   onSearchChange,
   availableNodes,
-}) => (
+}: RelationGroupProps) => (
   <div style={{ marginBottom: '16px' }}>
     <div style={{
       fontSize: '11px', fontWeight: 600, textTransform: 'uppercase',
@@ -141,7 +168,17 @@ const RelationGroup = ({
    ProfilePanel — main side panel.
    Reads node data directly from context instead of duplicating it in local state.
 ───────────────────────────────────────────────────────────────────────────── */
-const ProfilePanel = ({ isOpen }) => {
+interface ProfilePanelProps {
+  isOpen: boolean;
+}
+
+interface LinkState {
+  nodeId: string | null;
+  mode: RelationKind | null;
+  search: string;
+}
+
+const ProfilePanel = ({ isOpen }: ProfilePanelProps) => {
   const {
     nodes, edges,
     selectedNodeId, setIsPanelOpen,
@@ -150,7 +187,7 @@ const ProfilePanel = ({ isOpen }) => {
 
   // Pure UI state — not derived from node data
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [linkState, setLinkState] = useState({
+  const [linkState, setLinkState] = useState<LinkState>({
     nodeId: selectedNodeId,
     mode: null,
     search: '',
@@ -172,16 +209,16 @@ const ProfilePanel = ({ isOpen }) => {
   }
 
   /* ── Form handler — writes directly to context, no local state copy ── */
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     updateNode(node.id, { [name]: value });
   };
 
   /* ── Relation helpers ── */
   const getRelations = () => {
-    const parents  = [];
-    const children = [];
-    const partners = [];
+    const parents: RelationItem[] = [];
+    const children: RelationItem[] = [];
+    const partners: RelationItem[] = [];
 
     Object.values(edges).forEach(edge => {
       if (edge.type === 'parent-child') {
@@ -209,7 +246,7 @@ const ProfilePanel = ({ isOpen }) => {
     return ids;
   };
 
-  const handleAddNew = (relationType) => {
+  const handleAddNew = (relationType: RelationKind) => {
     const isParent  = relationType === 'parent';
     const isPartner = relationType === 'partner';
     const offsetX = isPartner ? 280 : 0;
@@ -228,7 +265,7 @@ const ProfilePanel = ({ isOpen }) => {
     else                addEdge(node.id, newNodeId, 'parent-child');
   };
 
-  const handleLinkNode = (personId) => {
+  const handleLinkNode = (personId: string) => {
     if (!linkMode) return;
     if (linkMode === 'parent')  addEdge(personId, node.id, 'parent-child');
     if (linkMode === 'child')   addEdge(node.id, personId, 'parent-child');
@@ -246,7 +283,7 @@ const ProfilePanel = ({ isOpen }) => {
   });
 
   // Factory — builds props for each RelationGroup to avoid repetition
-  const groupProps = (relType) => ({
+  const groupProps = (relType: RelationKind): Omit<RelationGroupProps, 'title' | 'items'> => ({
     relType,
     isLinkOpen:     linkMode === relType,
     onAddNew:       () => handleAddNew(relType),
@@ -258,7 +295,7 @@ const ProfilePanel = ({ isOpen }) => {
     onLinkNode:     handleLinkNode,
     onRemoveRelation: removeEdge,
     linkSearch,
-    onSearchChange: search => setLinkState(prev => ({
+    onSearchChange: (search: string) => setLinkState(prev => ({
       nodeId: selectedNodeId,
       mode: prev.nodeId === selectedNodeId ? prev.mode : null,
       search,
@@ -329,7 +366,7 @@ const ProfilePanel = ({ isOpen }) => {
 
           <div className="form-group">
             <label htmlFor="bio">Biografia</label>
-            <textarea id="bio" name="bio" rows="3" value={node.bio || ''} onChange={handleChange} placeholder="Krótki życiorys..." />
+            <textarea id="bio" name="bio" rows={3} value={node.bio || ''} onChange={handleChange} placeholder="Krótki życiorys..." />
           </div>
 
           <div className="form-group">

@@ -1,6 +1,16 @@
 import React, { useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
+interface ConfirmModalProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  confirmLabel?: string;
+  danger?: boolean;
+}
+
 /**
  * Accessible confirmation modal — replaces window.confirm().
  * Supports keyboard: Enter to confirm, Escape to cancel.
@@ -13,10 +23,10 @@ const ConfirmModal = ({
   onCancel,
   confirmLabel = 'Potwierdź',
   danger = false,
-}) => {
+}: ConfirmModalProps) => {
   useEffect(() => {
     if (!isOpen) return;
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel();
       if (e.key === 'Enter') onConfirm();
     };

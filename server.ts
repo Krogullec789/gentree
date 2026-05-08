@@ -3,7 +3,8 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { normalizeTreeData } from './src/utils/treeData.js';
+import { normalizeTreeData } from './src/utils/treeData';
+import type { TreeData } from './src/types/tree';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,7 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const DB_FILE = process.env.TEST_DB || path.join(__dirname, 'db.json');
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
-let writeQueue = Promise.resolve();
+let writeQueue: Promise<void> = Promise.resolve();
 
 // Restrict CORS to known origin
 app.use(cors({ origin: ALLOWED_ORIGIN }));
@@ -30,7 +31,8 @@ app.get('/api/tree', async (req, res) => {
     const data = await fs.promises.readFile(DB_FILE, 'utf8');
     res.json(JSON.parse(data));
   } catch (error) {
-    if (error.code === 'ENOENT') {
+    const readError = error as NodeJS.ErrnoException;
+    if (readError.code === 'ENOENT') {
       res.json({ nodes: {}, edges: {} });
     } else {
       console.error(error);
@@ -39,13 +41,13 @@ app.get('/api/tree', async (req, res) => {
   }
 });
 
-const writeTreeData = async (data) => {
+const writeTreeData = async (data: TreeData): Promise<void> => {
   const tmpFile = `${DB_FILE}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
   await fs.promises.writeFile(tmpFile, JSON.stringify(data, null, 2));
   await fs.promises.rename(tmpFile, DB_FILE);
 };
 
-const queueTreeWrite = (data) => {
+const queueTreeWrite = (data: TreeData): Promise<void> => {
   writeQueue = writeQueue
     .catch(() => {})
     .then(() => writeTreeData(data));

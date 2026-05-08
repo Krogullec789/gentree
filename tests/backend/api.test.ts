@@ -11,7 +11,7 @@ const testDbPath = path.join(__dirname, 'test-db.json');
 process.env.TEST_DB = testDbPath;
 process.env.NODE_ENV = 'test';
 
-const { default: app } = await import('../../server.js');
+const { default: app } = await import('../../server');
 
 describe('Backend API Tests', () => {
   beforeAll(() => {

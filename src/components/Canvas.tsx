@@ -9,7 +9,7 @@ const Canvas = () => {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
 
   // Keep context scale in sync whenever local transform.scale changes
   useEffect(() => {
@@ -28,15 +28,15 @@ const Canvas = () => {
     setFocusNodeId(null);
   }, [focusNodeId, nodes, setFocusNodeId, transform.scale]);
 
-  const handleMouseDown = (e) => {
-    if (e.target.closest('.person-node')) return;
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('.person-node')) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - transform.x, y: e.clientY - transform.y });
     setSelectedNodeId(null);
     setIsPanelOpen(false);
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDragging) return;
     setTransform(prev => ({
       ...prev,
@@ -50,7 +50,7 @@ const Canvas = () => {
   // Zoom correctly towards the mouse cursor position
   // Using useCallback with no deps so the event listener is registered only once.
   // Functional setState form (prev =>) gives us current state without needing it as a dep.
-  const handleWheel = useCallback((e) => {
+  const handleWheel = useCallback((e: WheelEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 

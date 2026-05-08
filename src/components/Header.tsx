@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Download, Upload, Search, X } from 'lucide-react';
 import { useTreeInfo } from '../store/TreeContext';
 import { normalizeTreeData } from '../utils/treeData';
+import type { PersonNode } from '../types/tree';
 
 const Header = () => {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId, setIsPanelOpen, setFocusNodeId } = useTreeInfo();
@@ -9,9 +10,9 @@ const Header = () => {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [importError, setImportError] = useState('');
-  const searchRef = useRef(null);
+  const searchRef = useRef<HTMLDivElement | null>(null);
 
-  const personLabel = (n) => {
+  const personLabel = (n: PersonNode) => {
     const name = `${n.firstName || ''} ${n.lastName || ''}`.trim() || '(brak imienia)';
     const year = n.birthDate ? n.birthDate.slice(0, 4) : null;
     return { name, year };
@@ -23,7 +24,7 @@ const Header = () => {
     return full.includes(q);
   }).slice(0, 8);
 
-  const handleSelect = (node) => {
+  const handleSelect = (node: PersonNode) => {
     setQuery('');
     setIsOpen(false);
     setSelectedNodeId(node.id);
@@ -41,13 +42,14 @@ const Header = () => {
     linkElement.click();
   };
 
-  const handleImport = (e) => {
-    const file = e.target.files[0];
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
     setImportError('');
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
+        if (typeof event.target?.result !== 'string') throw new Error('Invalid file content');
         const normalizedData = normalizeTreeData(JSON.parse(event.target.result));
         if (!normalizedData) throw new Error('Invalid tree data');
         setNodes(normalizedData.nodes);
@@ -64,8 +66,8 @@ const Header = () => {
 
   // Close dropdown on outside click
   useEffect(() => {
-    const handler = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && e.target instanceof Node && !searchRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };

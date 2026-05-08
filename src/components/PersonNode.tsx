@@ -2,8 +2,13 @@ import React, { useState, useRef } from 'react';
 import { useTreeInfo } from '../store/TreeContext';
 import { User, GripHorizontal } from 'lucide-react';
 import { NODE_WIDTH } from '../constants/layout';
+import type { NodePosition, PersonNode as PersonNodeType } from '../types/tree';
 
-const PersonNode = ({ node }) => {
+interface PersonNodeProps {
+  node: PersonNodeType;
+}
+
+const PersonNode = ({ node }: PersonNodeProps) => {
   const { selectedNodeId, setSelectedNodeId, setIsPanelOpen, updateNode, canvasScale, setDragPosition, clearDragPosition } = useTreeInfo();
   const isSelected = selectedNodeId === node.id;
 
@@ -14,13 +19,13 @@ const PersonNode = ({ node }) => {
   const displayX = isDraggingNode ? localPos.x : node.x;
   const displayY = isDraggingNode ? localPos.y : node.y;
 
-  const formatYear = (dateStr) => {
+  const formatYear = (dateStr: string) => {
     if (!dateStr) return '?';
     const d = new Date(dateStr);
-    return isNaN(d) ? dateStr.substring(0, 4) : d.getFullYear();
+    return Number.isNaN(d.getTime()) ? dateStr.substring(0, 4) : d.getFullYear();
   };
 
-  const handleClick = (e) => {
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     if (!isDraggingNode) {
       setSelectedNodeId(node.id);
@@ -28,7 +33,7 @@ const PersonNode = ({ node }) => {
     }
   };
 
-  const handleDragStart = (e) => {
+  const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     setIsDraggingNode(true);
 
@@ -40,7 +45,7 @@ const PersonNode = ({ node }) => {
     // them to canvas-space pixels, so dragging is accurate at any zoom level.
     const scale = canvasScale;
 
-    const handleMouseMove = (moveEvent) => {
+    const handleMouseMove = (moveEvent: MouseEvent) => {
       const dx = (moveEvent.clientX - startX) / scale;
       const dy = (moveEvent.clientY - startY) / scale;
       const newPos = { x: initialX + dx, y: initialY + dy };
@@ -61,9 +66,9 @@ const PersonNode = ({ node }) => {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  const handleKeyboardMove = (e) => {
+  const handleKeyboardMove = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const step = e.shiftKey ? 50 : 10;
-    const moves = {
+    const moves: Record<string, NodePosition> = {
       ArrowUp: { x: node.x, y: node.y - step },
       ArrowRight: { x: node.x + step, y: node.y },
       ArrowDown: { x: node.x, y: node.y + step },

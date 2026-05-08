@@ -1,28 +1,47 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { normalizeTreeData } from '../utils/treeData';
+import type {
+  EdgeMap,
+  NewPersonNode,
+  NodeMap,
+  NodePosition,
+  PersonNode,
+  RelationshipType,
+  TreeContextValue,
+} from '../types/tree';
 
 // Use env variable — falls back to localhost for local dev
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-const TreeContext = createContext();
+const TreeContext = createContext<TreeContextValue | null>(null);
 
-export const useTreeInfo = () => useContext(TreeContext);
+export const useTreeInfo = (): TreeContextValue => {
+  const context = useContext(TreeContext);
+  if (!context) {
+    throw new Error('useTreeInfo must be used within TreeProvider');
+  }
+  return context;
+};
 
 const createId = () => crypto.randomUUID();
 
-export const TreeProvider = ({ children }) => {
-  const [nodes, setNodes] = useState({});
-  const [edges, setEdges] = useState({});
-  const [selectedNodeId, setSelectedNodeId] = useState(null);
+interface TreeProviderProps {
+  children: React.ReactNode;
+}
+
+export const TreeProvider = ({ children }: TreeProviderProps) => {
+  const [nodes, setNodes] = useState<NodeMap>({});
+  const [edges, setEdges] = useState<EdgeMap>({});
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [focusNodeId, setFocusNodeId] = useState(null);
+  const [focusNodeId, setFocusNodeId] = useState<string | null>(null);
   // Temporary drag positions — updated every mousemove without touching global `nodes`
-  const [dragPositions, setDragPositions] = useState({});
+  const [dragPositions, setDragPositions] = useState<Record<string, NodePosition>>({});
   // Shared canvas scale so PersonNode can correct drag delta at zoom != 1
   const [canvasScale, setCanvasScale] = useState(1);
 
-  const saveTimerRef = useRef(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Tracks how many effect invocations to skip (used to prevent re-saving data just loaded from server)
   const saveSkipCountRef = useRef(0);
 
@@ -43,7 +62,7 @@ export const TreeProvider = ({ children }) => {
         } else {
           // Empty DB — create a root node and let it save normally
           const rootId = createId();
-          const rootNode = {
+          const rootNode: PersonNode = {
             id: rootId,
             firstName: 'Jan',
             lastName: 'Kowalski',
@@ -88,11 +107,11 @@ export const TreeProvider = ({ children }) => {
     };
   }, [nodes, edges]);
 
-  const setDragPosition = (id, pos) => {
+  const setDragPosition = (id: string, pos: NodePosition) => {
     setDragPositions(prev => ({ ...prev, [id]: pos }));
   };
 
-  const clearDragPosition = (id) => {
+  const clearDragPosition = (id: string) => {
     setDragPositions(prev => {
       const next = { ...prev };
       delete next[id];
@@ -100,14 +119,14 @@ export const TreeProvider = ({ children }) => {
     });
   };
 
-  const addNode = (nodeData) => {
+  const addNode = (nodeData: NewPersonNode) => {
     const id = createId();
     const newNode = { id, ...nodeData };
     setNodes((prev) => ({ ...prev, [id]: newNode }));
     return id;
   };
 
-  const updateNode = (id, updates) => {
+  const updateNode = (id: string, updates: Partial<PersonNode>) => {
     setNodes((prev) => {
       if (!prev[id]) return prev;
       return {
@@ -117,7 +136,7 @@ export const TreeProvider = ({ children }) => {
     });
   };
 
-  const removeNode = (id) => {
+  const removeNode = (id: string) => {
     setNodes((prev) => {
       const newNodes = { ...prev };
       delete newNodes[id];
@@ -138,7 +157,7 @@ export const TreeProvider = ({ children }) => {
     }
   };
 
-  const addEdge = (sourceId, targetId, type) => {
+  const addEdge = (sourceId: string, targetId: string, type: RelationshipType) => {
     const exists = Object.values(edges).some(
       (e) =>
         (e.sourceId === sourceId && e.targetId === targetId && e.type === type) ||
@@ -150,7 +169,7 @@ export const TreeProvider = ({ children }) => {
     }
   };
 
-  const removeEdge = (id) => {
+  const removeEdge = (id: string) => {
     setEdges((prev) => {
       const newEdges = { ...prev };
       delete newEdges[id];

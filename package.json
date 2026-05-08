@@ -5,10 +5,11 @@
   "description": "Modern family tree visualization tool with interactive canvas, relationship logic, and comprehensive testing.",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"node --env-file=.env server.js\"",
-    "build": "vite build",
+    "dev": "concurrently \"vite\" \"node --env-file=.env --import tsx server.ts\"",
+    "build": "tsc --noEmit && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
@@ -26,8 +27,12 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/supertest": "^7.2.0",
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.4",
@@ -36,6 +41,9 @@
     "globals": "^17.4.0",
     "jsdom": "^29.0.1",
     "supertest": "^7.2.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.2",
     "vite": "^8.0.1",
     "vitest": "^4.1.2"
   }

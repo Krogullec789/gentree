@@ -4,10 +4,24 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import Header from '../Header';
 import * as TreeContextModule from '../../store/TreeContext';
+import type { TreeContextValue } from '../../types/tree';
 
-const mockTreeContext = {
+const mockTreeContext: TreeContextValue = {
   nodes: {},
   edges: {},
+  selectedNodeId: null,
+  isPanelOpen: false,
+  canvasScale: 1,
+  dragPositions: {},
+  focusNodeId: null,
+  setCanvasScale: vi.fn(),
+  setDragPosition: vi.fn(),
+  clearDragPosition: vi.fn(),
+  addNode: vi.fn(),
+  updateNode: vi.fn(),
+  removeNode: vi.fn(),
+  addEdge: vi.fn(),
+  removeEdge: vi.fn(),
   setNodes: vi.fn(),
   setEdges: vi.fn(),
   setSelectedNodeId: vi.fn(),

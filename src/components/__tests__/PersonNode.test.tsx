@@ -4,12 +4,26 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import PersonNode from '../PersonNode';
 import * as TreeContextModule from '../../store/TreeContext';
+import type { PersonNode as PersonNodeType, TreeContextValue } from '../../types/tree';
 
-const mockTreeContext = {
+const mockTreeContext: TreeContextValue = {
+  nodes: {},
+  edges: {},
   selectedNodeId: null,
+  isPanelOpen: false,
+  dragPositions: {},
+  focusNodeId: null,
   setSelectedNodeId: vi.fn(),
   setIsPanelOpen: vi.fn(),
+  setCanvasScale: vi.fn(),
+  setFocusNodeId: vi.fn(),
+  addNode: vi.fn(),
   updateNode: vi.fn(),
+  removeNode: vi.fn(),
+  addEdge: vi.fn(),
+  removeEdge: vi.fn(),
+  setNodes: vi.fn(),
+  setEdges: vi.fn(),
   canvasScale: 1,
   setDragPosition: vi.fn(),
   clearDragPosition: vi.fn()
@@ -23,7 +37,7 @@ beforeEach(() => {
 
 describe('PersonNode Component', () => {
   it('renders student data correctly', () => {
-    const nodeData = {
+    const nodeData: PersonNodeType = {
       id: '1',
       firstName: 'Jan',
       lastName: 'Kowalski',
@@ -41,7 +55,7 @@ describe('PersonNode Component', () => {
 
   it('moves the node with keyboard arrows when the drag handle is focused', async () => {
     const user = userEvent.setup();
-    const nodeData = {
+    const nodeData: PersonNodeType = {
       id: '1',
       firstName: 'Jan',
       lastName: 'Kowalski',
